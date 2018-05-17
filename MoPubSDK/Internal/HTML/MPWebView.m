@@ -74,7 +74,9 @@ static BOOL gForceWKWebView = NO;
         WKUserContentController *contentController = [[WKUserContentController alloc] init];
         WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
         config.allowsInlineMediaPlayback = kMoPubAllowsInlineMediaPlaybackDefault;
-        if (@available(iOS 9.0, *)) {
+        if (@available(iOS 10.0, *)) {
+            config.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypeAudio;
+        } else if (@available(iOS 9.0, *)) {
             config.requiresUserActionForMediaPlayback = kMoPubRequiresUserActionForMediaPlaybackDefault;
         } else {
             config.mediaPlaybackRequiresUserAction = kMoPubRequiresUserActionForMediaPlaybackDefault;
