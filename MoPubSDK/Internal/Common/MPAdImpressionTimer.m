@@ -84,7 +84,7 @@ static const CGFloat kDefaultPixelCountWhenUsingPercentage = CGFLOAT_MIN;
 {
     CGFloat adViewArea = CGRectGetWidth(self.adView.bounds) * CGRectGetHeight(self.adView.bounds);
     if (adViewArea == 0) {
-        MPLogError(@"ad view area cannot be 0");
+        // MPLogError(@"ad view area cannot be 0");
         return;
     }
 
