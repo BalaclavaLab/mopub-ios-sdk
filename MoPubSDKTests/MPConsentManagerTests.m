@@ -1,15 +1,18 @@
 //
 //  MPConsentManagerTests.m
-//  MoPubSDKTests
 //
-//  Copyright © 2018 MoPub. All rights reserved.
+//  Copyright 2018 Twitter, Inc.
+//  Licensed under the MoPub SDK License Agreement
+//  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import <XCTest/XCTest.h>
+#import "MPAdServerKeys.h"
 #import "MPAdServerURLBuilder.h"
 #import "MPConsentManager.h"
 #import "MPConsentManager+Testing.h"
 #import "MPConsentError.h"
+#import "MPURL.h"
 
 @interface MPConsentManagerTests : XCTestCase
 
@@ -431,6 +434,9 @@
     success = [manager setCurrentStatus:MPConsentStatusPotentialWhitelist reason:@"unit test" shouldBroadcast:YES];
     XCTAssertTrue(success);
     XCTAssert(manager.currentStatus == MPConsentStatusPotentialWhitelist);
+    XCTAssert([manager.consentedIabVendorList isEqualToString:@"yyyyy"]);
+    XCTAssert([manager.consentedPrivacyPolicyVersion isEqualToString:@"3.0.0"]);
+    XCTAssert([manager.consentedVendorListVersion isEqualToString:@"4.0.0"]);
 
     // Server now says publisher is whitelisted
     NSDictionary * after = @{
@@ -438,10 +444,10 @@
                               @"is_gdpr_region": @"1",
                               @"call_again_after_secs": @"10",
                               @"current_privacy_policy_link": @"http://www.mopub.com/privacy",
-                              @"current_privacy_policy_version": @"3.0.0",
+                              @"current_privacy_policy_version": @"3.1.0",
                               @"current_vendor_list_link": @"http://www.mopub.com/vendors",
-                              @"current_vendor_list_version": @"4.0.0",
-                              @"current_vendor_list_iab_format": @"yyyyy",
+                              @"current_vendor_list_version": @"4.1.0",
+                              @"current_vendor_list_iab_format": @"zzzzz",
                               @"current_vendor_list_iab_hash": @"hash",
                               };
     success = [manager updateConsentStateWithParameters:after];
@@ -453,11 +459,14 @@
     XCTAssertTrue(manager.isGDPRApplicable == MPBoolYes);
     XCTAssert(manager.syncFrequency == 10);
     XCTAssert([manager.privacyPolicyUrl.absoluteString isEqualToString:@"http://www.mopub.com/privacy"]);
-    XCTAssert([manager.privacyPolicyVersion isEqualToString:@"3.0.0"]);
+    XCTAssert([manager.privacyPolicyVersion isEqualToString:@"3.1.0"]);
     XCTAssert([manager.vendorListUrl.absoluteString isEqualToString:@"http://www.mopub.com/vendors"]);
-    XCTAssert([manager.vendorListVersion isEqualToString:@"4.0.0"]);
-    XCTAssert([manager.iabVendorList isEqualToString:@"yyyyy"]);
+    XCTAssert([manager.vendorListVersion isEqualToString:@"4.1.0"]);
+    XCTAssert([manager.iabVendorList isEqualToString:@"zzzzz"]);
     XCTAssert([manager.iabVendorListHash isEqualToString:@"hash"]);
+    XCTAssert([manager.consentedIabVendorList isEqualToString:@"yyyyy"]);
+    XCTAssert([manager.consentedPrivacyPolicyVersion isEqualToString:@"3.0.0"]);
+    XCTAssert([manager.consentedVendorListVersion isEqualToString:@"4.0.0"]);
 }
 
 - (void)testTransitionFromUnknownToConsented {
@@ -760,6 +769,91 @@
     XCTAssertFalse(manager.isConsentNeeded);
 }
 
+#pragma mark - forceIsGDPRApplicable property
+
+- (void)testSetForceIsGDPRApplicableToYesFromUnknownMakesGDPRApplicable {
+    MPConsentManager * manager = MPConsentManager.sharedManager;
+
+    // Set before state
+    [manager setIsGDPRApplicable:MPBoolUnknown];
+
+    // Set forceIsGDPRApplicable
+    manager.forceIsGDPRApplicable = YES;
+
+    // Check after state
+    XCTAssert(manager.isGDPRApplicable == MPBoolYes);
+    XCTAssert(manager.rawIsGDPRApplicable == MPBoolUnknown);
+    XCTAssertTrue(manager.forceIsGDPRApplicable);
+}
+
+- (void)testSetForceIsGDPRApplicableToYesFromNoMakesGDPRApplicable {
+    MPConsentManager * manager = MPConsentManager.sharedManager;
+
+    // Set before state
+    [manager setIsGDPRApplicable:MPBoolNo];
+
+    // Set forceIsGDPRApplicable
+    manager.forceIsGDPRApplicable = YES;
+
+    // Check after state
+    XCTAssert(manager.isGDPRApplicable == MPBoolYes);
+    XCTAssert(manager.rawIsGDPRApplicable == MPBoolNo);
+    XCTAssertTrue(manager.forceIsGDPRApplicable);
+}
+
+- (void)testGDPRIsStillApplicableEvenIfForceIsGDPRApplicableIsFalse {
+    MPConsentManager * manager = MPConsentManager.sharedManager;
+
+    // Set before state
+    [manager setIsGDPRApplicable:MPBoolYes];
+
+    // Set forceIsGDPRApplicable
+    manager.forceIsGDPRApplicable = NO;
+
+    // Check after state
+    XCTAssert(manager.isGDPRApplicable == MPBoolYes);
+    XCTAssert(manager.rawIsGDPRApplicable == MPBoolYes);
+    XCTAssertFalse(manager.forceIsGDPRApplicable);
+}
+
+- (void)testGDPRIsNotApplicableWithoutForcingOrSetting {
+    MPConsentManager * manager = MPConsentManager.sharedManager;
+
+    // Set before state
+    [manager setIsGDPRApplicable:MPBoolNo];
+
+    // Set forceIsGDPRApplicable
+    manager.forceIsGDPRApplicable = NO;
+
+    // Check after state
+    XCTAssert(manager.isGDPRApplicable == MPBoolNo);
+    XCTAssert(manager.rawIsGDPRApplicable == MPBoolNo);
+    XCTAssertFalse(manager.forceIsGDPRApplicable);
+}
+
+- (void)testGDPRApplicabilityDoesNotChangeAfterSettingForceIsGDPRApplicableToFalse {
+    MPConsentManager * manager = MPConsentManager.sharedManager;
+
+    // Set before state
+    [manager setIsGDPRApplicable:MPBoolNo];
+
+    // Set forceIsGDPRApplicable to YES
+    manager.forceIsGDPRApplicable = YES;
+
+    // Check after enabling forceIsGDPRApplicable
+    XCTAssert(manager.isGDPRApplicable == MPBoolYes);
+    XCTAssert(manager.rawIsGDPRApplicable == MPBoolNo);
+    XCTAssertTrue(manager.forceIsGDPRApplicable);
+
+    // Set forceIsGDPRApplicable to NO
+    manager.forceIsGDPRApplicable = NO;
+
+    // Check after disabling forceIsGDPRApplicable
+    XCTAssert(manager.isGDPRApplicable == MPBoolYes);
+    XCTAssert(manager.rawIsGDPRApplicable == MPBoolNo);
+    XCTAssertTrue(manager.forceIsGDPRApplicable);
+}
+
 #pragma mark - forceStatus method
 
 - (void)testForceStatusForceExplicitNo {
@@ -790,6 +884,7 @@
     [manager forceStatusShouldForceExplicitNo:YES
                       shouldInvalidateConsent:NO
                        shouldReacquireConsent:NO
+                 shouldForceGDPRApplicability:NO
                           consentChangeReason:@"unit test"
                       shouldBroadcast:YES];
 
@@ -828,6 +923,7 @@
     [manager forceStatusShouldForceExplicitNo:NO
                       shouldInvalidateConsent:YES
                        shouldReacquireConsent:NO
+                 shouldForceGDPRApplicability:NO
                           consentChangeReason:@"unit test"
                       shouldBroadcast:YES];
 
@@ -866,6 +962,7 @@
     [manager forceStatusShouldForceExplicitNo:YES
                       shouldInvalidateConsent:YES
                        shouldReacquireConsent:NO
+                 shouldForceGDPRApplicability:NO
                           consentChangeReason:@"unit test"
                       shouldBroadcast:YES];
 
@@ -899,6 +996,7 @@
     [manager forceStatusShouldForceExplicitNo:YES
                       shouldInvalidateConsent:NO
                        shouldReacquireConsent:NO
+                 shouldForceGDPRApplicability:NO
                           consentChangeReason:@"unit test"
                       shouldBroadcast:YES];
 
@@ -937,6 +1035,7 @@
     [manager forceStatusShouldForceExplicitNo:NO
                       shouldInvalidateConsent:YES
                        shouldReacquireConsent:NO
+                 shouldForceGDPRApplicability:NO
                           consentChangeReason:@"unit test"
                       shouldBroadcast:YES];
 
@@ -953,7 +1052,7 @@
     MPConsentManager * manager = MPConsentManager.sharedManager;
     manager.adUnitIdUsedForConsent = @"abcdefg";
 
-    NSURL * url = [MPAdServerURLBuilder consentSynchronizationUrl];
+    MPURL * url = [MPAdServerURLBuilder consentSynchronizationUrl];
     XCTAssertNotNil(url);
 }
 
@@ -996,21 +1095,20 @@
     XCTAssert([manager.iabVendorListHash isEqualToString:@"hash"]);
 
     // Generate the URL
-    NSURL * syncUrl = [MPAdServerURLBuilder consentSynchronizationUrl];
+    MPURL * syncUrl = [MPAdServerURLBuilder consentSynchronizationUrl];
     XCTAssertNotNil(syncUrl);
 
     // Validate the query parameters; really only care about the existence of the keys
-    NSString * queryString = syncUrl.query;
-    XCTAssert([queryString containsString:@"id=123456"]);
-    XCTAssert([queryString containsString:@"current_consent_status=explicit_yes"]);
-    XCTAssert([queryString containsString:@"last_changed_ms="]);
-    XCTAssert([queryString containsString:@"nv="]);
-    XCTAssert([queryString containsString:@"gdpr_applies="]);
-    XCTAssert([queryString containsString:@"consent_change_reason="]);
-    XCTAssert([queryString containsString:@"consented_privacy_policy_version=3.0.0"]);
-    XCTAssert([queryString containsString:@"consented_vendor_list_version=4.0.0"]);
-    XCTAssert([queryString containsString:@"cached_vendor_list_iab_hash=hash"]);
-    XCTAssert([queryString containsString:@"extras=i%27m%20extra%21"]);
+    XCTAssert([[syncUrl stringForPOSTDataKey:kAdServerIDKey] isEqualToString:@"123456"]);
+    XCTAssert([[syncUrl stringForPOSTDataKey:kCurrentConsentStatusKey] isEqualToString:@"explicit_yes"]);
+    XCTAssertNotNil([syncUrl stringForPOSTDataKey:kLastChangedMsKey]);
+    XCTAssertNotNil([syncUrl stringForPOSTDataKey:kSDKVersionKey]);
+    XCTAssertNotNil([syncUrl stringForPOSTDataKey:kGDPRAppliesKey]);
+    XCTAssertNotNil([syncUrl stringForPOSTDataKey:kConsentChangedReasonKey]);
+    XCTAssert([[syncUrl stringForPOSTDataKey:kConsentedPrivacyPolicyVersionKey] isEqualToString:@"3.0.0"]);
+    XCTAssert([[syncUrl stringForPOSTDataKey:kConsentedVendorListVersionKey] isEqualToString:@"4.0.0"]);
+    XCTAssert([[syncUrl stringForPOSTDataKey:kCachedIabVendorListHashKey] isEqualToString:@"hash"]);
+    XCTAssert([[syncUrl stringForPOSTDataKey:kExtrasKey] isEqualToString:@"i'm extra!"]);
 }
 
 - (void)testAutomaticAdUnitIdPopulation {
@@ -1024,7 +1122,7 @@
 #pragma clang diagnostic pop
     XCTAssertNil(manager.adUnitIdUsedForConsent);
 
-    NSURL * url = [MPAdServerURLBuilder URLWithAdUnitID:@"abc123" keywords:nil userDataKeywords:nil location:nil];
+    MPURL * url = [MPAdServerURLBuilder URLWithAdUnitID:@"abc123" keywords:nil userDataKeywords:nil location:nil];
     XCTAssertNotNil(url);
     XCTAssertNotNil(manager.adUnitIdUsedForConsent);
     XCTAssert([manager.adUnitIdUsedForConsent isEqualToString:@"abc123"]);
@@ -1144,6 +1242,46 @@
 
     XCTAssertNotNil(loadError);
     XCTAssert(loadError.code == MPConsentErrorCodeLimitAdTrackingEnabled);
+    XCTAssertFalse(MPConsentManager.sharedManager.isConsentDialogLoaded);
+}
+
+- (void)testDialogWontLoadIfGDPRDoesNotApply {
+    [MPConsentManager.sharedManager setIsGDPRApplicable:MPBoolNo];
+
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Wait for load to return"];
+    __block NSError *loadError = nil;
+
+    [MPConsentManager.sharedManager loadConsentDialogWithCompletion:^(NSError *error){
+        loadError = error;
+        [expectation fulfill];
+    }];
+
+    [self waitForExpectationsWithTimeout:1.0 handler:^(NSError *error){
+        XCTAssertNil(error);
+    }];
+
+    XCTAssertNotNil(loadError);
+    XCTAssert(loadError.code == MPConsentErrorCodeGDPRIsNotApplicable);
+    XCTAssertFalse(MPConsentManager.sharedManager.isConsentDialogLoaded);
+}
+
+- (void)testDialogWontLoadIfNotSureIfGDPRApplies {
+    [MPConsentManager.sharedManager setIsGDPRApplicable:MPBoolUnknown];
+
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Wait for load to return"];
+    __block NSError *loadError = nil;
+
+    [MPConsentManager.sharedManager loadConsentDialogWithCompletion:^(NSError *error){
+        loadError = error;
+        [expectation fulfill];
+    }];
+
+    [self waitForExpectationsWithTimeout:1.0 handler:^(NSError *error){
+        XCTAssertNil(error);
+    }];
+
+    XCTAssertNotNil(loadError);
+    XCTAssert(loadError.code == MPConsentErrorCodeGDPRIsNotApplicable);
     XCTAssertFalse(MPConsentManager.sharedManager.isConsentDialogLoaded);
 }
 

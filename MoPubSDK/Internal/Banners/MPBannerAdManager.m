@@ -1,13 +1,14 @@
 //
 //  MPBannerAdManager.m
-//  MoPub
 //
-//  Copyright (c) 2013 MoPub. All rights reserved.
+//  Copyright 2018 Twitter, Inc.
+//  Licensed under the MoPub SDK License Agreement
+//  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import "MPBannerAdManager.h"
 #import "MPAdServerURLBuilder.h"
-#import "MPInstanceProvider.h"
+#import "MPAdTargeting.h"
 #import "MPCoreInstanceProvider.h"
 #import "MPBannerAdManagerDelegate.h"
 #import "MPError.h"
@@ -15,6 +16,9 @@
 #import "MPConstants.h"
 #import "MPLogging.h"
 #import "MPBannerCustomEventAdapter.h"
+#import "NSMutableArray+MPAdditions.h"
+#import "NSDate+MPAdditions.h"
+#import "NSError+MPAdditions.h"
 
 @interface MPBannerAdManager ()
 
@@ -23,11 +27,14 @@
 @property (nonatomic, strong) MPBaseBannerAdapter *requestingAdapter;
 @property (nonatomic, strong) UIView *requestingAdapterAdContentView;
 @property (nonatomic, strong) MPAdConfiguration *requestingConfiguration;
+@property (nonatomic, strong) MPAdTargeting *targeting;
+@property (nonatomic, strong) NSMutableArray<MPAdConfiguration *> *remainingConfigurations;
 @property (nonatomic, strong) MPTimer *refreshTimer;
 @property (nonatomic, assign) BOOL adActionInProgress;
 @property (nonatomic, assign) BOOL automaticallyRefreshesContents;
 @property (nonatomic, assign) BOOL hasRequestedAtLeastOneAd;
 @property (nonatomic, assign) UIInterfaceOrientation currentOrientation;
+@property (nonatomic, assign) NSTimeInterval adapterLoadStartTimestamp;
 
 - (void)loadAdWithURL:(NSURL *)URL;
 - (void)applicationWillEnterForeground;
@@ -90,7 +97,7 @@
     return self.communicator.loading || self.requestingAdapter;
 }
 
-- (void)loadAd
+- (void)loadAdWithTargeting:(MPAdTargeting *)targeting
 {
     if (!self.hasRequestedAtLeastOneAd) {
         self.hasRequestedAtLeastOneAd = YES;
@@ -101,6 +108,7 @@
         return;
     }
 
+    self.targeting = targeting;
     [self loadAdWithURL:nil];
 }
 
@@ -158,11 +166,9 @@
     [self.communicator cancel];
 
     URL = (URL) ? URL : [MPAdServerURLBuilder URLWithAdUnitID:[self.delegate adUnitId]
-                                                     keywords:[self.delegate keywords]
-                                             userDataKeywords:[self.delegate userDataKeywords]
-                                                     location:[self.delegate location]];
-
-    MPLogInfo(@"Banner view (%@) loading ad with MoPub server URL: %@", [self.delegate adUnitId], URL);
+                                                     keywords:self.targeting.keywords
+                                             userDataKeywords:self.targeting.userDataKeywords
+                                                     location:self.targeting.location];
 
     [self.communicator loadURL:URL];
 }
@@ -194,49 +200,73 @@
 - (void)refreshTimerDidFire
 {
     if (!self.loading && self.automaticallyRefreshesContents) {
-        [self loadAd];
+        [self loadAdWithTargeting:self.targeting];
     }
+}
+
+- (BOOL)shouldScheduleTimerOnImpressionDisplay {
+    // If `visibleImpressionTrackingEnabled` is set to `YES`, we
+    // should schedule the timer only after the impression has fired.
+    return self.requestingConfiguration.visibleImpressionTrackingEnabled;
+}
+
+- (void)fetchAdWithConfiguration:(MPAdConfiguration *)configuration {
+    MPLogInfo(@"Banner ad view is fetching ad network type: %@", configuration.networkType);
+
+    if (configuration.adType == MPAdTypeUnknown) {
+        [self didFailToLoadAdapterWithError:[MOPUBError errorWithCode:MOPUBErrorServerError]];
+        return;
+    }
+
+    if (configuration.adType == MPAdTypeInterstitial) {
+        MPLogWarn(@"Could not load ad: banner object received an interstitial ad unit ID.");
+        [self didFailToLoadAdapterWithError:[MOPUBError errorWithCode:MOPUBErrorAdapterInvalid]];
+        return;
+    }
+
+    if (configuration.adUnitWarmingUp) {
+        MPLogInfo(kMPWarmingUpErrorLogFormatWithAdUnitID, self.delegate.adUnitId);
+        [self didFailToLoadAdapterWithError:[MOPUBError errorWithCode:MOPUBErrorAdUnitWarmingUp]];
+        return;
+    }
+
+    if ([configuration.networkType isEqualToString:kAdTypeClear]) {
+        MPLogInfo(kMPClearErrorLogFormatWithAdUnitID, self.delegate.adUnitId);
+        [self didFailToLoadAdapterWithError:[MOPUBError errorWithCode:MOPUBErrorNoInventory]];
+        return;
+    }
+
+    // Notify Ad Server of the ad fetch attempt. This is fire and forget.
+    [self.communicator sendBeforeLoadUrlWithConfiguration:configuration];
+
+    // Record the start time of the load.
+    self.adapterLoadStartTimestamp = NSDate.now.timeIntervalSince1970;
+
+    self.requestingAdapter = [[MPBannerCustomEventAdapter alloc] initWithConfiguration:configuration
+                                                                              delegate:self];
+    if (self.requestingAdapter == nil) {
+        [self adapter:nil didFailToLoadAdWithError:nil];
+        return;
+    }
+
+    [self.requestingAdapter _getAdWithConfiguration:configuration targeting:self.targeting containerSize:self.delegate.containerSize];
 }
 
 #pragma mark - <MPAdServerCommunicatorDelegate>
 
 - (void)communicatorDidReceiveAdConfigurations:(NSArray<MPAdConfiguration *> *)configurations
 {
-    self.requestingConfiguration = configurations.firstObject;
+    self.remainingConfigurations = [configurations mutableCopy];
+    self.requestingConfiguration = [self.remainingConfigurations removeFirst];
 
-    MPLogInfo(@"Banner ad view is fetching ad network type: %@", self.requestingConfiguration.networkType);
-
-    if (self.requestingConfiguration.adType == MPAdTypeUnknown) {
-        [self didFailToLoadAdapterWithError:[MOPUBError errorWithCode:MOPUBErrorServerError]];
-        return;
-    }
-
-    if (self.requestingConfiguration.adType == MPAdTypeInterstitial) {
-        MPLogWarn(@"Could not load ad: banner object received an interstitial ad unit ID.");
-        [self didFailToLoadAdapterWithError:[MOPUBError errorWithCode:MOPUBErrorAdapterInvalid]];
-        return;
-    }
-
-    if (self.requestingConfiguration.adUnitWarmingUp) {
-        MPLogInfo(kMPWarmingUpErrorLogFormatWithAdUnitID, self.delegate.adUnitId);
-        [self didFailToLoadAdapterWithError:[MOPUBError errorWithCode:MOPUBErrorAdUnitWarmingUp]];
-        return;
-    }
-
-    if ([self.requestingConfiguration.networkType isEqualToString:kAdTypeClear]) {
+    // There are no configurations to try. Consider this a clear response by the server.
+    if (self.remainingConfigurations.count == 0 && self.requestingConfiguration == nil) {
         MPLogInfo(kMPClearErrorLogFormatWithAdUnitID, self.delegate.adUnitId);
         [self didFailToLoadAdapterWithError:[MOPUBError errorWithCode:MOPUBErrorNoInventory]];
         return;
     }
 
-    self.requestingAdapter = [[MPBannerCustomEventAdapter alloc] initWithConfiguration:self.requestingConfiguration
-                                                                              delegate:self];
-    if (!self.requestingAdapter) {
-        [self loadAdWithURL:self.requestingConfiguration.failoverURL];
-        return;
-    }
-
-    [self.requestingAdapter _getAdWithConfiguration:self.requestingConfiguration containerSize:self.delegate.containerSize];
+    [self fetchAdWithConfiguration:self.requestingConfiguration];
 }
 
 - (void)communicatorDidFailWithError:(NSError *)error
@@ -276,7 +306,7 @@
 
 - (CLLocation *)location
 {
-    return [self.delegate location];
+    return self.targeting.location;
 }
 
 - (BOOL)requestingAdapterIsReadyToBePresented
@@ -296,30 +326,56 @@
         [self.onscreenAdapter didDisplayAd];
 
         self.requestingAdapterAdContentView = nil;
-        [self scheduleRefreshTimer];
+
+        if (![self shouldScheduleTimerOnImpressionDisplay]) {
+            [self scheduleRefreshTimer];
+        }
     }
 }
 
 - (void)adapter:(MPBaseBannerAdapter *)adapter didFinishLoadingAd:(UIView *)ad
 {
     if (self.requestingAdapter == adapter) {
+        self.remainingConfigurations = nil;
         self.requestingAdapterAdContentView = ad;
+
+        // Record the end of the adapter load and send off the fire and forget after-load-url tracker.
+        NSTimeInterval duration = NSDate.now.timeIntervalSince1970 - self.adapterLoadStartTimestamp;
+        [self.communicator sendAfterLoadUrlWithConfiguration:self.requestingConfiguration adapterLoadDuration:duration adapterLoadResult:MPAfterLoadResultAdLoaded];
+
         [self presentRequestingAdapter];
     }
 }
 
 - (void)adapter:(MPBaseBannerAdapter *)adapter didFailToLoadAdWithError:(NSError *)error
 {
+    // Record the end of the adapter load and send off the fire and forget after-load-url tracker
+    // with the appropriate error code result.
+    NSTimeInterval duration = NSDate.now.timeIntervalSince1970 - self.adapterLoadStartTimestamp;
+    MPAfterLoadResult result = (error.isAdRequestTimedOutError ? MPAfterLoadResultTimeout : (adapter == nil ? MPAfterLoadResultMissingAdapter : MPAfterLoadResultError));
+    [self.communicator sendAfterLoadUrlWithConfiguration:self.requestingConfiguration adapterLoadDuration:duration adapterLoadResult:result];
+
     if (self.requestingAdapter == adapter) {
-        [self loadAdWithURL:self.requestingConfiguration.failoverURL];
+        // There are more ad configurations to try.
+        if (self.remainingConfigurations.count > 0) {
+            self.requestingConfiguration = [self.remainingConfigurations removeFirst];
+            [self fetchAdWithConfiguration:self.requestingConfiguration];
+        }
+        // No more configurations to try. Send new request to Ads server to get more Ads.
+        else if (self.requestingConfiguration.nextURL != nil) {
+            [self loadAdWithURL:self.requestingConfiguration.nextURL];
+        }
+        // No more configurations to try and no more pages to load.
+        else {
+            MPLogInfo(kMPClearErrorLogFormatWithAdUnitID, self.delegate.adUnitId);
+            [self didFailToLoadAdapterWithError:[MOPUBError errorWithCode:MOPUBErrorNoInventory]];
+        }
     }
 
-    if (self.onscreenAdapter == adapter) {
+    if (self.onscreenAdapter == adapter && adapter != nil) {
         // the onscreen adapter has failed.  we need to:
         // 1) remove it
-        // 2) tell the delegate
-        // 3) and note that there can't possibly be a modal on display any more
-        [self.delegate managerDidFailToLoadAd];
+        // 2) and note that there can't possibly be a modal on display any more
         [self.delegate invalidateContentView];
         [self.onscreenAdapter unregisterDelegate];
         self.onscreenAdapter = nil;
@@ -330,8 +386,14 @@
         if (self.requestingAdapterIsReadyToBePresented) {
             [self presentRequestingAdapter];
         } else {
-            [self loadAd];
+            [self loadAdWithTargeting:self.targeting];
         }
+    }
+}
+
+- (void)adapter:(MPBaseBannerAdapter *)adapter didTrackImpressionForAd:(UIView *)ad {
+    if (self.onscreenAdapter == adapter && [self shouldScheduleTimerOnImpressionDisplay]) {
+        [self scheduleRefreshTimer];
     }
 }
 

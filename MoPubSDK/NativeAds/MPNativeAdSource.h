@@ -1,8 +1,9 @@
 //
 //  MPNativeAdSource.h
-//  MoPub
 //
-//  Copyright (c) 2014 MoPub. All rights reserved.
+//  Copyright 2018 Twitter, Inc.
+//  Licensed under the MoPub SDK License Agreement
+//  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import <Foundation/Foundation.h>
@@ -11,12 +12,12 @@
 
 @interface MPNativeAdSource : NSObject
 
-@property (nonatomic, weak) id <MPNativeAdSourceDelegate> delegate;
+@property (nonatomic, weak) id<MPNativeAdSourceDelegate> delegate;
 
-+ (instancetype)source;
+- (instancetype)initWithDelegate:(id<MPNativeAdSourceDelegate>)delegate;
+
 - (void)loadAdsWithAdUnitIdentifier:(NSString *)identifier rendererConfigurations:(NSArray *)rendererConfigurations andTargeting:(MPNativeAdRequestTargeting *)targeting;
 - (void)deleteCacheForAdUnitIdentifier:(NSString *)identifier;
 - (id)dequeueAdForAdUnitIdentifier:(NSString *)identifier;
-
 
 @end

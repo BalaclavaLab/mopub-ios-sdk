@@ -1,13 +1,15 @@
 //
 //  MPCoreInstanceProvider.h
-//  MoPub
 //
-//  Copyright (c) 2014 MoPub. All rights reserved.
+//  Copyright 2018 Twitter, Inc.
+//  Licensed under the MoPub SDK License Agreement
+//  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import "MPGlobal.h"
+#import "MPReachability.h"
 #import "MPURLResolver.h"
 
 @class MPAdConfiguration;
@@ -23,7 +25,6 @@
 // Utilities
 @class MPAdAlertManager, MPAdAlertGestureRecognizer;
 @class MPAnalyticsTracker;
-@class MPReachability;
 @class MPTimer;
 @class MPGeolocationProvider;
 @class CLLocationManager;
@@ -52,12 +53,12 @@ typedef NS_OPTIONS(NSUInteger, MPATSSetting) {
 - (CLLocationManager *)buildCLLocationManager;
 - (id<MPAdAlertManagerProtocol>)buildMPAdAlertManagerWithDelegate:(id)delegate;
 - (MPAdAlertGestureRecognizer *)buildMPAdAlertGestureRecognizerWithTarget:(id)target action:(SEL)action;
-- (MPAnalyticsTracker *)sharedMPAnalyticsTracker;
-- (MPReachability *)sharedMPReachability;
 - (MPATSSetting)appTransportSecuritySettings;
 
 // This call may return nil and may not update if the user hot-swaps the device's sim card.
 - (NSDictionary *)sharedCarrierInfo;
+
+- (MPNetworkStatus)currentRadioAccessTechnology;
 
 - (MPTimer *)buildMPTimerWithTimeInterval:(NSTimeInterval)seconds target:(id)target selector:(SEL)selector repeats:(BOOL)repeats;
 

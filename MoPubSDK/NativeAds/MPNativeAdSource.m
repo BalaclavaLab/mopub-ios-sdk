@@ -1,8 +1,9 @@
 //
 //  MPNativeAdSource.m
-//  MoPub
 //
-//  Copyright (c) 2014 MoPub. All rights reserved.
+//  Copyright 2018 Twitter, Inc.
+//  Licensed under the MoPub SDK License Agreement
+//  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import "MPNativeAdSource.h"
@@ -23,18 +24,14 @@ static NSTimeInterval const kCacheTimeoutInterval = MOPUB_ADS_EXPIRATION_INTERVA
 
 #pragma mark - Object Lifecycle
 
-+ (instancetype)source
-{
-    return [[MPNativeAdSource alloc] init];
-}
-
-- (instancetype)init
+- (instancetype)initWithDelegate:(id<MPNativeAdSourceDelegate>)delegate
 {
     self = [super init];
     if (self) {
         _adQueueDictionary = [[NSMutableDictionary alloc] init];
+        _delegate = delegate;
     }
-    
+
     return self;
 }
 
@@ -50,11 +47,11 @@ static NSTimeInterval const kCacheTimeoutInterval = MOPUB_ADS_EXPIRATION_INTERVA
 - (void)loadAdsWithAdUnitIdentifier:(NSString *)identifier rendererConfigurations:(NSArray *)rendererConfigurations andTargeting:(MPNativeAdRequestTargeting *)targeting
 {
     [self deleteCacheForAdUnitIdentifier:identifier];
-    
+
     MPNativeAdSourceQueue *adQueue = [[MPNativeAdSourceQueue alloc] initWithAdUnitIdentifier:identifier rendererConfigurations:rendererConfigurations andTargeting:targeting];
     adQueue.delegate = self;
     [self.adQueueDictionary setObject:adQueue forKey:identifier];
-    
+
     [adQueue loadAds];
 }
 
@@ -70,7 +67,7 @@ static NSTimeInterval const kCacheTimeoutInterval = MOPUB_ADS_EXPIRATION_INTERVA
     MPNativeAdSourceQueue *sourceQueue = [self.adQueueDictionary objectForKey:identifier];
     sourceQueue.delegate = nil;
     [sourceQueue cancelRequests];
-    
+
     [self.adQueueDictionary removeObjectForKey:identifier];
 }
 

@@ -1,8 +1,9 @@
 //
 //  MRController.m
-//  MoPubSDK
 //
-//  Copyright (c) 2014 MoPub. All rights reserved.
+//  Copyright 2018 Twitter, Inc.
+//  Licensed under the MoPub SDK License Agreement
+//  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import "MRController.h"
@@ -16,7 +17,6 @@
 #import "MPCoreInstanceProvider.h"
 #import "MPClosableView.h"
 #import "MPGlobal.h"
-#import "MPInstanceProvider.h"
 #import "MPLogging.h"
 #import "MPTimer.h"
 #import "NSHTTPURLResponse+MPAdditions.h"
@@ -87,7 +87,9 @@ static NSString *const kMRAIDCommandResize = @"resize";
 
 @implementation MRController
 
-- (instancetype)initWithAdViewFrame:(CGRect)adViewFrame adPlacementType:(MRAdViewPlacementType)placementType
+- (instancetype)initWithAdViewFrame:(CGRect)adViewFrame
+                    adPlacementType:(MRAdViewPlacementType)placementType
+                           delegate:(id<MRControllerDelegate>)delegate
 {
     if (self = [super init]) {
         _placementType = placementType;
@@ -119,6 +121,8 @@ static NSString *const kMRAIDCommandResize = @"resize";
 
         _adAlertManager = [[MPCoreInstanceProvider sharedProvider] buildMPAdAlertManagerWithDelegate:self];
         _adAlertManagerTwoPart = [[MPCoreInstanceProvider sharedProvider] buildMPAdAlertManagerWithDelegate:self];
+
+        _delegate = delegate;
     }
 
     return self;
@@ -149,10 +153,10 @@ static NSString *const kMRAIDCommandResize = @"resize";
                                           forceUIWebView:self.shouldUseUIWebView];
     self.mraidWebView.shouldConformToSafeArea = [self isInterstitialAd];
 
-    self.mraidBridge = [[MPInstanceProvider sharedProvider] buildMRBridgeWithWebView:self.mraidWebView delegate:self];
-    self.mraidAdView = [[MPInstanceProvider sharedProvider] buildMRAIDMPClosableViewWithFrame:self.mraidDefaultAdFrame
-                                                                                      webView:self.mraidWebView
-                                                                                     delegate:self];
+    self.mraidBridge = [[MRBridge alloc] initWithWebView:self.mraidWebView delegate:self];
+    self.mraidAdView = [[MPClosableView alloc] initWithFrame:self.mraidDefaultAdFrame
+                                                     webView:self.mraidWebView
+                                                    delegate:self];
     if (self.placementType == MRAdViewPlacementTypeInterstitial) {
         self.mraidAdView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     }
@@ -849,8 +853,10 @@ static NSString *const kMRAIDCommandResize = @"resize";
         CGRect twoPartFrame = self.mraidAdView.frame;
 
         MPWebView *twoPartWebView = [self buildMRAIDWebViewWithFrame:twoPartFrame forceUIWebView:self.shouldUseUIWebView];
-        self.mraidBridgeTwoPart = [[MPInstanceProvider sharedProvider] buildMRBridgeWithWebView:twoPartWebView delegate:self];
-        self.mraidAdViewTwoPart = [[MPInstanceProvider sharedProvider] buildMRAIDMPClosableViewWithFrame:twoPartFrame webView:twoPartWebView delegate:self];
+        self.mraidBridgeTwoPart = [[MRBridge alloc] initWithWebView:twoPartWebView delegate:self];
+        self.mraidAdViewTwoPart = [[MPClosableView alloc] initWithFrame:twoPartFrame
+                                                                webView:twoPartWebView
+                                                               delegate:self];
         self.isAdLoading = YES;
 
         self.expansionContentView = self.mraidAdViewTwoPart;
