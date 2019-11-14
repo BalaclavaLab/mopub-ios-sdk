@@ -1,7 +1,7 @@
 //
 //  MPInterstitialCustomEvent.m
 //
-//  Copyright 2018 Twitter, Inc.
+//  Copyright 2018-2019 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
@@ -10,19 +10,16 @@
 
 @implementation MPInterstitialCustomEvent
 
-@synthesize delegate;
-
 - (void)requestInterstitialWithCustomEventInfo:(NSDictionary *)info
 {
-    // The default implementation of this method does nothing. Subclasses must override this method
-    // and implement code to load an interstitial here.
+    // This deprecated method will forward the request to with no ad markup.
+    [self requestInterstitialWithCustomEventInfo:info adMarkup:nil];
 }
 
 - (void)requestInterstitialWithCustomEventInfo:(NSDictionary *)info adMarkup:(NSString *)adMarkup
 {
-    // By default, the original requestInterstitialWithCustomEventInfo: method will be called.
-    // Otherwise subclasses must override this method and implement code to load an interstitial here.
-    [self requestInterstitialWithCustomEventInfo:info];
+    // The default implementation of this method does nothing. Subclasses must override this method
+    // and implement code to load an interstitial here.
 }
 
 - (BOOL)enableAutomaticImpressionAndClickTracking
