@@ -68,9 +68,7 @@
             ],
             "exclude_files": [
                 "MoPubSDK/Viewability/Moat",
-                "MoPubSDK/Viewability/Avid",
-                "MoPubSDK/NativeAds",
-                "MoPubSDK/NativeVideo"
+                "MoPubSDK/Viewability/Avid"
             ]
         },
         {
