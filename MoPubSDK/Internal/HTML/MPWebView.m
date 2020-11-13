@@ -66,14 +66,9 @@ static NSString *const kMoPubFrameKeyPathString = @"frame";
     }];
 
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
-    if (@available(iOS 10.0, *)) {
-        config.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypeAudio;
-    } else if (@available(iOS 9.0, *)) {
-        config.requiresUserActionForMediaPlayback = kMoPubRequiresUserActionForMediaPlaybackDefault;
-    } else {
-        config.mediaPlaybackRequiresUserAction = kMoPubRequiresUserActionForMediaPlaybackDefault;
-    }
     config.allowsInlineMediaPlayback = kMoPubAllowsInlineMediaPlaybackDefault;
+    // Imgur: This line fixes an issue with muting ads
+    config.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypeAudio;
     config.userContentController = contentController;
 
     if (@available(iOS 11, *)) {
