@@ -1,20 +1,20 @@
 //
 //  MPWebView.h
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 /**
- * @c MPWebView
- * This class is a wrapper class for @c WKWebView. @c MPWebView blocks all JavaScript text boxes from appearing.
- *
- * It's highly recommended that the caller uses @c `evaluateJavaScript:completionHandler:` whenever code can be reworked
- * to make use of completion blocks to keep the advantages of asynchronicity. It solely fires off the javascript execution within
- * @c WKWebView and does not wait or return.
- *
- * MPWebView currently does not support a few other features of WKWebView, such as pagination -- as WKWebView.
+ @c MPWebView
+ This class is a wrapper class for @c WKWebView. @c MPWebView blocks all JavaScript text boxes from appearing.
+
+ It's highly recommended that the caller uses @c `evaluateJavaScript:completionHandler:` whenever code can be reworked
+ to make use of completion blocks to keep the advantages of asynchronicity. It solely fires off the javascript execution within
+ @c WKWebView and does not wait or return.
+
+ MPWebView currently does not support a few other features of WKWebView, such as pagination -- as WKWebView.
  */
 
 #import <UIKit/UIKit.h>

@@ -1,15 +1,15 @@
 //
 //  MPNativeAdRequestTests.m
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import <XCTest/XCTest.h>
+#import <MoPubSDK/MoPubSDK-Swift.h>
 #import "MPAdConfigurationFactory.h"
 #import "MPAdServerKeys.h"
-#import "MPAPIEndpoints.h"
 #import "MPConstants.h"
 #import "MPError.h"
 #import "MPNativeAdRequest.h"

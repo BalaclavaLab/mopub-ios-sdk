@@ -1,11 +1,20 @@
 //
 //  MPImageDownloadQueue.m
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
+// For non-module targets, UIKit must be explicitly imported
+// since MoPubSDK-Swift.h will not import it.
+#if __has_include(<MoPubSDK/MoPubSDK-Swift.h>)
+    #import <UIKit/UIKit.h>
+    #import <MoPubSDK/MoPubSDK-Swift.h>
+#else
+    #import <UIKit/UIKit.h>
+    #import "MoPubSDK-Swift.h"
+#endif
 #import "MPImageDownloadQueue.h"
 #import "MPNativeAdError.h"
 #import "MPLogging.h"
@@ -57,7 +66,7 @@
             @autoreleasepool {
                 if ([[MPNativeCache sharedCache] cachedDataExistsForKey:imageURL.absoluteString] && useCachedImage) {
                     NSData *imageData = [[MPNativeCache sharedCache] retrieveDataForKey:imageURL.absoluteString];
-                    UIImage *image = [UIImage imageWithData:imageData];
+                    UIImage *image = [MPImageCreator imageWith:imageData];
                     result[imageURL] = image;
                 } else if (![[MPNativeCache sharedCache] cachedDataExistsForKey:imageURL.absoluteString] || !useCachedImage) {
                     MPLogDebug(@"Downloading %@", imageURL);
@@ -78,7 +87,7 @@
 
                     BOOL validImageDownloaded = data != nil;
                     if (validImageDownloaded) {
-                        UIImage *downloadedImage = [UIImage imageWithData:data];
+                        UIImage *downloadedImage = [MPImageCreator imageWith:data];
                         if (downloadedImage != nil) {
                             [[MPNativeCache sharedCache] storeData:data forKey:imageURL.absoluteString];
                             result[imageURL] = downloadedImage;

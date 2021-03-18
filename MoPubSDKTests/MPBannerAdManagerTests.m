@@ -1,7 +1,7 @@
 //
 //  MPBannerAdManagerTests.m
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
@@ -248,7 +248,7 @@ static const NSTimeInterval kDefaultTimeout = 10;
     communicator.mockConfigurationsResponse = configurations;
     manager.communicator = communicator;
 
-    MPAdTargeting * targeting = [[MPAdTargeting alloc] initWithCreativeSafeSize:CGSizeZero];
+    MPAdTargeting * targeting = [[MPAdTargeting alloc] initWithCreativeSafeSize:CGSizeMake(320, 50)];
     targeting.localExtras = @{ @"testing": @"YES" };
     [manager loadAdWithTargeting:targeting];
 
@@ -284,7 +284,7 @@ static const NSTimeInterval kDefaultTimeout = 10;
     communicator.mockConfigurationsResponse = configurations;
     manager.communicator = communicator;
 
-    MPAdTargeting * targeting = [[MPAdTargeting alloc] initWithCreativeSafeSize:CGSizeZero];
+    MPAdTargeting * targeting = [[MPAdTargeting alloc] initWithCreativeSafeSize:CGSizeMake(320, 50)];
     [manager loadAdWithTargeting:targeting];
 
     [manager.onscreenAdapter trackImpression];
@@ -321,10 +321,44 @@ static const NSTimeInterval kDefaultTimeout = 10;
     communicator.mockConfigurationsResponse = configurations;
     manager.communicator = communicator;
 
-    MPAdTargeting * targeting = [[MPAdTargeting alloc] initWithCreativeSafeSize:CGSizeZero];
+    MPAdTargeting * targeting = [[MPAdTargeting alloc] initWithCreativeSafeSize:CGSizeMake(320, 50)];
     [manager loadAdWithTargeting:targeting];
 
     [manager.onscreenAdapter trackImpression];
+
+    [self waitForExpectationsWithTimeout:kDefaultTimeout handler:^(NSError * _Nullable error) {
+        if (error != nil) {
+            XCTFail(@"Timed out");
+        }
+    }];
+}
+
+#pragma mark - Edge Cases
+
+- (void)testInvalidAdapterContinuesClientSideWaterfall {
+    // Test to make sure the CSW continues when an adapter is valid but
+    // fails to load, and is followed by a conifig with an invalid adapter class.
+    XCTestExpectation * expectation = [self expectationWithDescription:@"Wait for banner load failure"];
+
+    MPBannerAdManagerDelegateHandler * handler = [MPBannerAdManagerDelegateHandler new];
+    handler.didLoadAd = ^{
+        XCTFail(@"Encountered an unexpected load success");
+        [expectation fulfill];
+    };
+    handler.didFailToLoadAd = ^(NSError * error){
+        [expectation fulfill];
+    };
+
+    // The first config must be valid, but fail to load.
+    MPAdConfiguration * bannerWithNoInventory = [MPAdConfigurationFactory defaultBannerConfigurationWithCustomEventClassName:@"MPInlineAdAdapterErrorMock"];
+    // The second load must fail due to not existing.
+    MPAdConfiguration * bannerWithInvalidAdapter = [MPAdConfigurationFactory defaultBannerConfigurationWithCustomEventClassName:@"InvalidCustomEventClassName"];
+    NSArray * configurations = @[ bannerWithNoInventory, bannerWithInvalidAdapter ];
+
+    MPBannerAdManager * manager = [[MPBannerAdManager alloc] initWithDelegate:handler];
+    MPMockAdServerCommunicator * communicator = [[MPMockAdServerCommunicator alloc] initWithDelegate:manager];
+    manager.communicator = communicator;
+    [manager communicatorDidReceiveAdConfigurations:configurations];
 
     [self waitForExpectationsWithTimeout:kDefaultTimeout handler:^(NSError * _Nullable error) {
         if (error != nil) {

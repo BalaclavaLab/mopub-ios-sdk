@@ -1,19 +1,12 @@
 //
 //  MainTabBarController.swift
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 import UIKit
-
-fileprivate enum Constants {
-    /**
-     Time in seconds to render notification animations.
-     */
-    static let notificationAnimationDuration: TimeInterval = 0.5
-}
 
 class MainTabBarController: UITabBarController {
     /**

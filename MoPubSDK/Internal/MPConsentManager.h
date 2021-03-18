@@ -1,7 +1,7 @@
 //
 //  MPConsentManager.h
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
@@ -60,7 +60,7 @@
 @property (nonatomic, copy, readonly, nonnull) NSString * currentLanguageCode;
 
 /**
- * Singleton instance of the manager.
+ Singleton instance of the manager.
  */
 + (MPConsentManager * _Nonnull)sharedManager;
 
@@ -256,30 +256,30 @@
 @property (nonatomic, copy, readonly, nullable) NSString * rawIfa;
 
 /**
- * Clean up personal data and add additonal logic for personal data when consent state changes.
+ Clean up personal data and add additonal logic for personal data when consent state changes.
  */
 
 - (void)handlePersonalDataOnStateChangeTo:(MPConsentStatus)newStatus fromOldStatus:(MPConsentStatus)oldStatus;
 
 /**
- * Store IFA(IDFA) temporary in NSUserDefault during MoPub initialization or app foregrounding. IFA is only used for removing personal data.
- *
+ Store IFA(IDFA) temporary in NSUserDefault during MoPub initialization or app foregrounding. IFA is only used for removing personal data.
+
  */
 - (void)storeIfa;
 
 /**
- * Remove IFA from NSUserDefault.
+ Remove IFA from NSUserDefault.
  */
 - (void)removeIfa;
 
 /**
- * If IFA is changed and the status is transitioning from MPConsentStatusConsented, remove old IFA from NSUserDefault and change status to unknown.
- *
+ If IFA is changed and the status is transitioning from MPConsentStatusConsented, remove old IFA from NSUserDefault and change status to unknown.
+
  */
 - (void)checkForIfaChange;
 
 /**
- * App conversion request will only be fired when MoPub obtains consent.
+ App conversion request will only be fired when MoPub obtains consent.
  */
 - (void)updateAppConversionTracking;
 

@@ -1,7 +1,7 @@
 //
 //  MPNativeAdRequest.m
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
@@ -20,8 +20,7 @@
 #import "MPNativeCustomEventDelegate.h"
 #import "MPNativeCustomEvent.h"
 #import "MPNativeView.h"
-#import "MOPUBNativeVideoAdConfigValues.h"
-#import "MOPUBNativeVideoCustomEvent.h"
+#import "MPNativeAdConfigValues.h"
 #import "NSJSONSerialization+MPAdditions.h"
 #import "MPAdServerCommunicator.h"
 #import "MPNativeAdRenderer.h"
@@ -29,11 +28,20 @@
 #import "MPNativeAdRendererConfiguration.h"
 #import "NSMutableArray+MPAdditions.h"
 #import "MPStopwatch.h"
-#import "MPTimer.h"
 #import "MPError.h"
 #import "NSDate+MPAdditions.h"
 #import "NSError+MPAdditions.h"
 #import "MPOpenMeasurementTracker.h"
+
+// For non-module targets, UIKit must be explicitly imported
+// since MoPubSDK-Swift.h will not import it.
+#if __has_include(<MoPubSDK/MoPubSDK-Swift.h>)
+    #import <UIKit/UIKit.h>
+    #import <MoPubSDK/MoPubSDK-Swift.h>
+#else
+    #import <UIKit/UIKit.h>
+    #import "MoPubSDK-Swift.h"
+#endif
 
 static NSString * const kNativeAdErrorDomain = @"com.mopub.NativeAd";
 
@@ -51,7 +59,7 @@ static NSString * const kNativeAdErrorDomain = @"com.mopub.NativeAd";
 @property (nonatomic, strong) NSMutableArray<MPAdConfiguration *> *remainingConfigurations;
 @property (nonatomic) id<MPNativeAdRenderer> customEventRenderer;
 @property (nonatomic, assign) BOOL loading;
-@property (nonatomic, strong) MPTimer *timeoutTimer;
+@property (nonatomic, strong) MPResumableTimer *timeoutTimer;
 @property (nonatomic, strong) MPStopwatch *loadStopwatch;
 @property (nonatomic, strong) NSURL *mostRecentlyLoadedURL;  // ADF-4286: avoid infinite ad reloads
 
@@ -155,25 +163,15 @@ static NSString * const kNativeAdErrorDomain = @"com.mopub.NativeAd";
      [self startTimeoutTimer];
 
     // For MoPub native ads, set the classData to be the adResponseData
-    if ((configuration.adapterClass == [MPMoPubNativeCustomEvent class]) || (configuration.adapterClass == [MOPUBNativeVideoCustomEvent class])) {
+    if ((configuration.adapterClass == [MPMoPubNativeCustomEvent class])) {
         NSError *error;
         NSMutableDictionary *classData = [NSJSONSerialization mp_JSONObjectWithData:configuration.adResponseData
                                                                             options:0
                                                                    clearNullObjects:YES
                                                                               error:&error];
-        if (configuration.adapterClass == [MOPUBNativeVideoCustomEvent class]) {
-            classData[kNativeAdConfigKey] = [[MOPUBNativeVideoAdConfigValues alloc] initWithPlayVisiblePercent:configuration.nativeVideoPlayVisiblePercent
-                                                                                           pauseVisiblePercent:configuration.nativeVideoPauseVisiblePercent
-                                                                                    impressionMinVisiblePixels:configuration.nativeImpressionMinVisiblePixels
-                                                                                   impressionMinVisiblePercent:configuration.nativeImpressionMinVisiblePercent
-                                                                                   impressionMinVisibleSeconds:configuration.nativeImpressionMinVisibleTimeInterval
-                                                                                              maxBufferingTime:configuration.nativeVideoMaxBufferingTime
-                                                                                                      trackers:configuration.vastVideoTrackers];
-        } else if (configuration.adapterClass == [MPMoPubNativeCustomEvent class]) {
-            classData[kNativeAdConfigKey] = [[MPNativeAdConfigValues alloc] initWithImpressionMinVisiblePixels:configuration.nativeImpressionMinVisiblePixels
-                                                                                   impressionMinVisiblePercent:configuration.nativeImpressionMinVisiblePercent
-                                                                                   impressionMinVisibleSeconds:configuration.nativeImpressionMinVisibleTimeInterval];
-        }
+        classData[kNativeAdConfigKey] = [[MPNativeAdConfigValues alloc] initWithImpressionMinVisiblePixels:configuration.nativeImpressionMinVisiblePixels
+                                                                               impressionMinVisiblePercent:configuration.nativeImpressionMinVisiblePercent
+                                                                               impressionMinVisibleSeconds:configuration.nativeImpressionMinVisibleTimeInterval];
 
         // Additional information to be passed to the MoPub native custom events
         // for the purposes of logging.
@@ -246,8 +244,6 @@ static NSString * const kNativeAdErrorDomain = @"com.mopub.NativeAd";
     adObject.adUnitID = self.adUnitId;
 
     // Create the Viewability tracker if it's a Marketplace native ad.
-    // Note that only native display ads are supported since native video
-    // ads are deprecated and slated for removal.
     Class customEventClass = self.adConfiguration.adapterClass;
     if (customEventClass == [MPMoPubNativeCustomEvent class]) {
         // If Viewability has been disabled or not initialized, `self.tracker` will be `nil`.
@@ -410,7 +406,7 @@ static NSString * const kNativeAdErrorDomain = @"com.mopub.NativeAd";
 
     if (timeInterval > 0) {
         __typeof__(self) __weak weakSelf = self;
-        self.timeoutTimer = [MPTimer timerWithTimeInterval:timeInterval repeats:NO block:^(MPTimer * _Nonnull timer) {
+        self.timeoutTimer = [[MPResumableTimer alloc] initWithInterval:timeInterval repeats:NO runLoopMode:NSDefaultRunLoopMode closure:^(MPResumableTimer *timer) {
             __typeof__(self) strongSelf = weakSelf;
             [strongSelf timeout];
         }];

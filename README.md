@@ -18,7 +18,7 @@ Thank you for submitting pull requests to the MoPub iOS GitHub repository. Our t
 
 The MoPub SDK supports multiple methods for installing into a project.
 
-The current version of the SDK is 5.14.1
+The current version of the SDK is 5.16.1
 
 ### Installation with CocoaPods
 
@@ -51,7 +51,7 @@ $ pod install
 
 MoPub provides a prepackaged archive of the dynamic framework:
 
-- **[MoPub SDK Framework.zip](https://github.com/mopub/mopub-ios-sdk/releases/download/5.14.1/mopub-framework-5.14.1.zip)**
+- **[MoPub SDK Framework.zip](https://github.com/mopub/mopub-ios-sdk/releases/download/5.16.1/mopub-framework-5.16.1.zip)**
 
   Includes everything you need to serve HTML, MRAID, and Native MoPub advertisements.  Third party ad networks are not included.
 
@@ -61,11 +61,11 @@ Add the dynamic framework to the target's Embedded Binaries section of the Gener
 
 MoPub provides two prepackaged archives of source code:
 
-- **[MoPub Base SDK.zip](https://github.com/mopub/mopub-ios-sdk/releases/download/5.14.1/mopub-base-5.14.1.zip)**
+- **[MoPub Base SDK.zip](https://github.com/mopub/mopub-ios-sdk/releases/download/5.16.1/mopub-base-5.16.1.zip)**
 
   Includes everything you need to serve HTML, MRAID, and Native MoPub advertisements.  Third party ad networks are not included.
 
-- **[MoPub Base SDK Excluding Native.zip](https://github.com/mopub/mopub-ios-sdk/releases/download/5.14.1/mopub-nonnative-5.14.1.zip)**
+- **[MoPub Base SDK Excluding Native.zip](https://github.com/mopub/mopub-ios-sdk/releases/download/5.16.1/mopub-nonnative-5.16.1.zip)**
 
   Includes everything you need to serve HTML and MRAID advertisements.  Third party ad networks and Native MoPub advertisements are not included.
 
@@ -78,7 +78,7 @@ Integration instructions are available on the [wiki](https://github.com/mopub/mo
 Please view the [changelog](https://github.com/mopub/mopub-ios-sdk/blob/master/CHANGELOG.md) for details.
 
 - **Bug Fixes**
-  - Fixed a bug where delegate methods `interstitialWillDisappear:`, `interstitialDidDisappear:`, `rewardedVideoAdWillDisappearForAdUnitID:`, and `rewardedVideoAdDidDisappearForAdUnitID:` did not fire.
+  - Fixed bug where users were not receiving rewards from Rewarded network ads using network adapters.
 
 See the [Getting Started Guide](https://github.com/mopub/mopub-ios-sdk/wiki/Getting-Started#app-transport-security-settings) for instructions on setting up ATS in your app.
 
@@ -91,7 +91,8 @@ For GDPR-specific upgrading instructions, also see the [GDPR Integration Guide](
 ## Requirements
 
 - iOS 10.0 and up
-- Xcode 12.0 and up
+- Xcode 12.1 and up
+- Swift 5
 
 ## License
 

@@ -1,17 +1,25 @@
 //
 //  MPAdServerCommunicator.m
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import "MPAdServerCommunicator.h"
 
+// For non-module targets, UIKit must be explicitly imported
+// since MoPubSDK-Swift.h will not import it.
+#if __has_include(<MoPubSDK/MoPubSDK-Swift.h>)
+    #import <UIKit/UIKit.h>
+    #import <MoPubSDK/MoPubSDK-Swift.h>
+#else
+    #import <UIKit/UIKit.h>
+    #import "MoPubSDK-Swift.h"
+#endif
 #import "MoPub.h"
 #import "MPAdConfiguration.h"
 #import "MPAdServerKeys.h"
-#import "MPAPIEndpoints.h"
 #import "MPConsentManager.h"
 #import "MPCoreInstanceProvider.h"
 #import "MPError.h"

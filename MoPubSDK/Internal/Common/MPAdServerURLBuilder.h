@@ -1,27 +1,31 @@
 //
 //  MPAdServerURLBuilder.h
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import <Foundation/Foundation.h>
 #import "MPAdTargeting.h"
-#import "MPEngineInfo.h"
 #import "MPURL.h"
 
 @interface MPAdServerURLBuilder : NSObject
 
 /**
- Stores the information of the engine used to render the MoPub SDK.
+ Name of the engine using the MoPub SDK. This field is @c nil for platform native integrations.
  */
-@property (class, nonatomic, strong) MPEngineInfo * engineInformation;
+@property (class, nonatomic, copy) NSString *engineName;
 
 /**
- * Returns an NSURL object given an endpoint and a dictionary of query parameters/values
+ Version of the engine using the MoPub SDK. This field is @c nil for platform native integrations.
  */
-+ (MPURL *)URLWithEndpointPath:(NSString *)endpointPath postData:(NSDictionary *)parameters;
+@property (class, nonatomic, copy) NSString *engineVersion;
+
+/**
+ Returns an NSURL object given NSURLComponents and a dictionary of query parameters/values
+ */
++ (MPURL *)URLWithComponents:(NSURLComponents *)components postData:(NSDictionary *)parameters;
 
 @end
 

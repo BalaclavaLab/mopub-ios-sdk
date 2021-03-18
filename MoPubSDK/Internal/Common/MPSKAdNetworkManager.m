@@ -1,16 +1,23 @@
 //
 //  MPSKAdNetworkManager.m
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import "MPSKAdNetworkManager.h"
-
+// For non-module targets, UIKit must be explicitly imported
+// since MoPubSDK-Swift.h will not import it.
+#if __has_include(<MoPubSDK/MoPubSDK-Swift.h>)
+    #import <UIKit/UIKit.h>
+    #import <MoPubSDK/MoPubSDK-Swift.h>
+#else
+    #import <UIKit/UIKit.h>
+    #import "MoPubSDK-Swift.h"
+#endif
 #import "MPAdServerKeys.h"
 #import "MPAdServerURLBuilder.h"
-#import "MPDeviceInformation.h"
 #import "MPError.h"
 #import "MPHTTPNetworkSession.h"
 #import "MPURL.h"
@@ -175,9 +182,11 @@ NSString *const kSKAdNetworkIdentifierInfoPlistKey = @"SKAdNetworkIdentifier";
             return;
         }
 
-        NSMutableArray *networkIdentifiers = [NSMutableArray arrayWithCapacity:skAdNetworkItemsArray.count];
+        // Use a set to keep track of the list of SKAdNetworks. This ensures that the list the
+        // SDK keeps track of is de-duplicated.
+        NSMutableSet *networkIdentifiers = [NSMutableSet setWithCapacity:skAdNetworkItemsArray.count];
 
-        // Transform dictionary entries into strings, and add into @c networkIdentifiers array
+        // Transform dictionary entries into strings, and add into @c networkIdentifiers set
         for (NSDictionary *item in skAdNetworkItemsArray) {
             NSString *networkIdentifier = item[kSKAdNetworkIdentifierInfoPlistKey];
 
@@ -186,11 +195,11 @@ NSString *const kSKAdNetworkIdentifierInfoPlistKey = @"SKAdNetworkIdentifier";
                 continue;
             }
 
-            // Add network identifier to array
+            // Add network identifier to set
             [networkIdentifiers addObject:networkIdentifier];
         }
 
-        sSupportedNetworks = networkIdentifiers.count > 0 ? [NSArray arrayWithArray:networkIdentifiers] : nil;
+        sSupportedNetworks = networkIdentifiers.count > 0 ? [networkIdentifiers allObjects] : nil;
     });
 
     return sSupportedNetworks;

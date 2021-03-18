@@ -1,7 +1,7 @@
 //
 //  MPAdAdapter.h
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
@@ -44,13 +44,13 @@ is not used, or if the ad unit is configured for local rewarding, this value wil
 #pragma mark - Rewarded only
 
 /**
- * Tells the caller whether the underlying ad network currently has an ad available for presentation.
+ Tells the caller whether the underlying ad network currently has an ad available for presentation.
  */
 @property (nonatomic, readonly) BOOL hasAdAvailable;
 
 /**
- * This method is called when another ad unit has played a rewarded video from the same network this adapter's adapter
- * represents.
+ This method is called when another ad unit has played a rewarded ad from the same
+ network this adapter represents.
  */
 - (void)handleDidPlayAd;
 

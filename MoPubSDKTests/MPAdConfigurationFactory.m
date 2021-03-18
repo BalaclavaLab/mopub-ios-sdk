@@ -1,13 +1,14 @@
 //
 //  MPAdConfigurationFactory.m
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import "MPAdConfigurationFactory.h"
 #import "MPNativeAd.h"
+#import "NSData+Testing.h"
 
 #define kImpressionTrackerURLsKey   @"imptracker"
 #define kClickTrackerURLKey         @"clktracker"
@@ -161,6 +162,13 @@
               } mutableCopy];
 }
 
++ (NSMutableDictionary *)defaultInterstitialStaticImageHeaders
+{
+    NSMutableDictionary *headers = [self defaultInterstitialHeaders];
+    headers[kFullAdTypeMetadataKey] = kAdTypeNative;
+    return headers;
+}
+
 + (MPAdConfiguration *)defaultInterstitialConfiguration
 {
     return [self defaultInterstitialConfigurationWithHeaders:nil HTMLString:nil];
@@ -251,16 +259,35 @@
                                         isFullscreenAd:YES];
 }
 
-#pragma mark - Rewarded Video
++ (MPAdConfiguration *)defaultVASTConfigurationWithVideoTrackers
+{
+    MPAdConfiguration *adConfiguration = [[MPAdConfiguration alloc] initWithMetadata:[self defaultVASTHeadersWithTrackers] data:nil isFullscreenAd:YES];
+    return adConfiguration;
+}
+
++ (MPAdConfiguration *)defaultInterstitialStaticImageAdConfigurationWithJSONFileNamed:(NSString *)jsonFileName
+{
+    NSData *jsonFile = [NSData dataFromJSONFileNamed:jsonFileName];
+    NSMutableDictionary *metadata = [self defaultInterstitialStaticImageHeaders];
+    MPAdConfiguration *adConfiguration = [[MPAdConfiguration alloc] initWithMetadata:metadata
+                                                                                data:jsonFile
+                                                                      isFullscreenAd:YES];
+    return adConfiguration;
+}
+
+#pragma mark - Rewarded Ads
+
 + (NSMutableDictionary *)defaultRewardedVideoHeaders
 {
     return [@{
               kFormatMetadataKey: kAdTypeRewardedVideo,
-              kAdTypeMetadataKey: @"custom",
+              kAdTypeMetadataKey: kAdTypeFullscreen,
               kClickthroughMetadataKey: @"http://ads.mopub.com/m/clickThroughTracker?a=1",
               kNextUrlMetadataKey: @"http://ads.mopub.com/m/failURL",
               kImpressionTrackerMetadataKey: @"http://ads.mopub.com/m/impressionTracker",
               kFullAdTypeMetadataKey: kAdTypeHtml,
+              kCustomEventClassNameMetadataKey: @"MPMoPubFullscreenAdAdapter",
+              kRewardedDurationMetadataKey: @"30.0",
               kViewabilityVerificationResourcesKey: @[@{
                                                           @"apiFramework": @"omid",
                                                           @"vendorKey": @"doubleverify.com-omid",
@@ -278,6 +305,14 @@
     return dict;
 }
 
++ (NSMutableDictionary *)defaultRewardedStaticImageHeaders
+{
+    NSMutableDictionary *dict = [[self defaultRewardedVideoHeaders] mutableCopy];
+    dict[kRewardedDurationMetadataKey] = @"5.0";
+    dict[kFullAdTypeMetadataKey] = kAdTypeNative;
+    return dict;
+}
+
 + (NSMutableDictionary *)defaultRewardedVideoHeadersServerToServer
 {
     NSMutableDictionary *dict = [[self defaultRewardedVideoHeaders] mutableCopy];
@@ -285,9 +320,9 @@
     return dict;
 }
 
-+ (NSMutableDictionary *)defaultNativeVideoHeadersWithTrackers
++ (NSMutableDictionary *)defaultVASTHeadersWithTrackers
 {
-    NSMutableDictionary *dict = [[self defaultNativeAdHeaders] mutableCopy];
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
     dict[kVASTVideoTrackersMetadataKey] = @"{\"urls\": [\"http://mopub.com/%%VIDEO_EVENT%%/foo\", \"http://mopub.com/%%VIDEO_EVENT%%/bar\"],\"events\": [\"start\", \"firstQuartile\", \"midpoint\", \"thirdQuartile\", \"complete\"]}";
     return dict;
 }
@@ -327,9 +362,24 @@
     return adConfiguration;
 }
 
-+ (MPAdConfiguration *)defaultNativeVideoConfigurationWithVideoTrackers
++ (MPAdConfiguration *)rewardedAdConfigurationWithVASTXMLFileNamed:(NSString *)vastXMLFilename
 {
-    MPAdConfiguration *adConfiguration = [[MPAdConfiguration alloc] initWithMetadata:[self defaultNativeVideoHeadersWithTrackers] data:nil isFullscreenAd:YES];
+    NSData *vastXML = [NSData dataFromXMLFileNamed:vastXMLFilename];
+    NSMutableDictionary *metadata = [NSMutableDictionary dictionaryWithDictionary:[self defaultRewardedVideoHeaders]];
+    metadata[kFullAdTypeMetadataKey] = kAdTypeVAST;
+    MPAdConfiguration *adConfiguration = [[MPAdConfiguration alloc] initWithMetadata:metadata
+                                                                                data:vastXML
+                                                                      isFullscreenAd:YES];
+    return adConfiguration;
+}
+
++ (MPAdConfiguration *)rewardedStaticImageAdConfigurationWithJSONFileNamed:(NSString *)jsonFileName
+{
+    NSData *jsonFile = [NSData dataFromJSONFileNamed:jsonFileName];
+    NSMutableDictionary *metadata = [NSMutableDictionary dictionaryWithDictionary:[self defaultRewardedStaticImageHeaders]];
+    MPAdConfiguration *adConfiguration = [[MPAdConfiguration alloc] initWithMetadata:metadata
+                                                                                data:jsonFile
+                                                                      isFullscreenAd:YES];
     return adConfiguration;
 }
 

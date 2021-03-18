@@ -1,7 +1,7 @@
 //
 //  MPInterstitialAdManager.m
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
@@ -234,13 +234,8 @@
             [self.delegate managerDidPresentInterstitial:self];
             break;
         case MPFullscreenAdEventWillDisappear:
-            MPLogAdEvent(MPLogEvent.adWillDisappear, self.delegate.interstitialAdController.adUnitId);
-            [self.delegate managerWillDismissInterstitial:self];
             break;
         case MPFullscreenAdEventDidDisappear:
-            self.ready = NO; // This state reset was put back here to accommodate adapters using the wrong event upon dismissal
-            MPLogAdEvent(MPLogEvent.adDidDisappear, self.delegate.interstitialAdController.adUnitId);
-            [self.delegate managerDidDismissInterstitial:self];
             break;
         case MPFullscreenAdEventDidReceiveTap:
             MPLogAdEvent(MPLogEvent.adWillPresentModal, self.delegate.interstitialAdController.adUnitId);
@@ -249,7 +244,11 @@
         case MPFullscreenAdEventWillLeaveApplication: // no op
             MPLogAdEvent(MPLogEvent.adWillLeaveApplication, self.delegate.interstitialAdController.adUnitId);
             break;
-        case MPFullscreenAdEventWillDismiss: {
+        case MPFullscreenAdEventWillDismiss:
+            MPLogAdEvent(MPLogEvent.adWillDismiss, self.delegate.interstitialAdController.adUnitId);
+            [self.delegate managerWillDismissInterstitial:self];
+            break;
+        case MPFullscreenAdEventDidDismiss: {
             // End the Viewability session and schedule the previously onscreen adapter for
             // deallocation if it exists since it is going offscreen. This only applies to
             // webview-based content.
@@ -259,8 +258,12 @@
             }
 
             // Reset state
+            self.adapter = nil;     // `nil` to trigger the scheduled deallocation since we are handing over ownership of the reference
             self.ready = NO;
             self.loading = NO;
+
+            MPLogAdEvent(MPLogEvent.adDidDismiss, self.delegate.interstitialAdController.adUnitId);
+            [self.delegate managerDidDismissInterstitial:self];
             break;
         }
     }
@@ -306,23 +309,12 @@
 
 #pragma mark - Transitional MPAdAdapterRewardEventDelegate Implementation
 
-/*
- TODO: Remove MPAdAdapterRewardEventDelegate support after ad manager consolidation.
 
- `MPFullscreenAdAdapter.delegate` is:
-    id<MPAdAdapterFullscreenEventDelegate, MPAdAdapterRewardEventDelegate> delegate
-
- Before ad manager consolidation happens for `MPInterstitialAdManager` and `MPRewardedVideoAdManager`,
- both ad managers as `MPFullscreenAdAdapter.delegate` needs to support `MPAdAdapterRewardEventDelegate`,
- although `MPInterstitialAdManager` does not have real reward related functionalities. As a result,
- `MPInterstitialAdManager` needs to have empty implementation for `MPAdAdapterRewardEventDelegate`.
- */
-
-- (NSString *)customerId {
+- (NSString * _Nullable)customerId {
     return nil;
 }
 
-- (id<MPMediationSettingsProtocol>)instanceMediationSettingsForClass:(Class)aClass {
+- (id<MPMediationSettingsProtocol> _Nullable)instanceMediationSettingsForClass:(Class)aClass {
     return nil;
 }
 

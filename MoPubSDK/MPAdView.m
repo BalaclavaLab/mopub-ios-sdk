@@ -1,7 +1,7 @@
 //
 //  MPAdView.m
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
@@ -35,13 +35,11 @@
 {
     if (self = [super initWithFrame:CGRectZero])
     {
-        self.backgroundColor = [UIColor clearColor];
-        self.clipsToBounds = YES;
-        self.maxAdSize = kMPPresetMaxAdSizeMatchFrame;
-        self.allowedNativeAdOrientation = MPNativeAdOrientationAny;
-        self.adUnitId = (adUnitId) ? adUnitId : DEFAULT_PUB_ID;
-        self.adManager = [[MPBannerAdManager alloc] initWithDelegate:self];
-        self.userInteractionEnabled = NO;
+        [self commonInit];
+
+        if (adUnitId.length > 0) {
+            self.adUnitId = adUnitId;
+        }
     }
     return self;
 }
@@ -56,6 +54,26 @@
     });
     adView.maxAdSize = size;
     return adView;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+    if (self = [super initWithCoder:coder]) {
+        [self commonInit];
+    }
+
+    return self;
+}
+
+- (void)commonInit
+{
+    self.backgroundColor = [UIColor clearColor];
+    self.clipsToBounds = YES;
+    self.maxAdSize = kMPPresetMaxAdSizeMatchFrame;
+    self.allowedNativeAdOrientation = MPNativeAdOrientationAny;
+    self.adUnitId = DEFAULT_PUB_ID;
+    self.adManager = [[MPBannerAdManager alloc] initWithDelegate:self];
+    self.userInteractionEnabled = NO;
 }
 
 - (void)dealloc

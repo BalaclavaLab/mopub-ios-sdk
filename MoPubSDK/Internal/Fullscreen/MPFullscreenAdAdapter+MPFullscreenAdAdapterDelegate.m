@@ -1,7 +1,7 @@
 //
 //  MPFullscreenAdAdapter+MPFullscreenAdAdapterDelegate.m
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
@@ -99,6 +99,10 @@
 
 - (void)fullscreenAdAdapterAdWillDismiss:(MPFullscreenAdAdapter *)adapter {
     [self handleAdEvent:MPFullscreenAdEventWillDismiss];
+}
+
+- (void)fullscreenAdAdapterAdDidDismiss:(MPFullscreenAdAdapter *)adapter {
+    [self handleAdEvent: MPFullscreenAdEventDidDismiss];
 }
 
 @end

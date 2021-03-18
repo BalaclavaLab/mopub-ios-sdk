@@ -1,13 +1,13 @@
 //
 //  NativeAdView.swift
 //
-//  Copyright 2018-2020 Twitter, Inc.
+//  Copyright 2018-2021 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 import UIKit
-import MoPub
+import MoPubSDK
 
 /**
  Provides a common native ad view.
@@ -22,7 +22,6 @@ class NativeAdView: UIView {
     @IBOutlet weak var mainImageView: UIImageView!
     @IBOutlet weak var sponsoredByLabel: UILabel!
     @IBOutlet weak var privacyInformationIconImageView: UIImageView!
-    @IBOutlet weak var videoView: UIView!
     
     // IBInspectable
     @IBInspectable var nibName: String? = "NativeAdView"
@@ -122,10 +121,6 @@ extension NativeAdView: MPNativeAdRendering {
     
     func nativePrivacyInformationIconImageView() -> UIImageView! {
         return privacyInformationIconImageView
-    }
-    
-    func nativeVideoView() -> UIView! {
-        return videoView
     }
     
     static func localizedSponsoredByText(withSponsorName sponsorName: String!) -> String! {
