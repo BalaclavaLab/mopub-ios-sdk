@@ -1,7 +1,7 @@
 {
   "name": "mopub-ios-sdk",
-  "module_name": "MoPub",
-  "version": "5.14.1",
+  "module_name": "MoPubSDK",
+  "version": "5.16.1",
   "license": {
     "type": "New BSD",
     "file": "LICENSE"
@@ -15,12 +15,13 @@
   "social_media_url": "http://twitter.com/mopub",
   "source": {
     "git": "https://github.com/mopub/mopub-ios-sdk.git",
-    "tag": "5.14.1"
+    "tag": "5.16.1"
   },
   "requires_arc": true,
   "platforms": {
     "ios": "10.0"
   },
+  "swift_versions": "5.0",
   "frameworks": [
     "AVFoundation",
     "AVKit",
@@ -53,20 +54,26 @@
     {
       "name": "MoPubSDK",
       "dependencies": {
-        "mopub-ios-sdk/Core": [],
-        "mopub-ios-sdk/NativeAds": []
+        "mopub-ios-sdk/Core": [
+
+        ],
+        "mopub-ios-sdk/NativeAds": [
+
+        ]
       }
     },
     {
       "name": "Core",
-      "source_files": "MoPubSDK/**/*.{h,m}",
+      "source_files": "MoPubSDK/**/*.{swift,h,m}",
       "resource_bundles": {
         "MoPubResources": [
           "MoPubSDK/Resources/**/*",
           "MoPubSDK/**/*.{nib,xib,js}"
         ]
       },
-      "exclude_files": [],
+      "exclude_files": [
+        "MoPubSDK/NativeAds"
+      ],
       "vendored_libraries": [
         "MoPubSDK/Internal/Viewability/OMSDK/*.{a}"
       ]
@@ -74,12 +81,14 @@
     {
       "name": "NativeAds",
       "dependencies": {
-        "mopub-ios-sdk/Core": []
+        "mopub-ios-sdk/Core": [
+
+        ]
       },
       "source_files": [
-        "MoPubSDK/NativeAds/**/*.{h,m}",
-        "MoPubSDK/NativeVideo/**/*.{h,m}"
+        "MoPubSDK/NativeAds/**/*.{swift,h,m}"
       ]
     }
-  ]
+  ],
+  "swift_version": "5.0"
 }
