@@ -66,9 +66,6 @@
           "MoPubSDK/**/*.{nib,xib,js}"
         ]
       },
-      "exclude_files": [
-        "MoPubSDK/NativeAds"
-      ],
       "vendored_frameworks": "Frameworks/*.xcframework"
     },
     {

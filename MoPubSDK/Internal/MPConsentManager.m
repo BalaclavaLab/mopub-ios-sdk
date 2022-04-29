@@ -575,7 +575,7 @@ static NSString * const kDeprecatedIfaPrefixToRemove = @"ifa:";
     if (self.adUnitIdUsedForConsent.length == 0) {
         NSString * description = @"Warning: no ad unit available for GDPR sync. Please make sure that the SDK is initialized correctly via `initializeSdkWithConfiguration:completion:` as soon as possible after app startup.";
         MPLogInfo(@"%@", description);
-        NSAssert(NO, description); // Crash the app if this is set up incorrectly
+//        NSAssert(NO, description); // Crash the app if this is set up incorrectly
     } else {
         MPLogDebug(@"Ad unit used for GDPR sync: %@", self.adUnitIdUsedForConsent);
     }
